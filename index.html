@@ -41,7 +41,7 @@
     });
 
     map.on('load', () => {
-      fetch('/data.json').then(response => response.json().then(data => {
+      fetch('data.json').then(response => response.json().then(data => {
         data.forEach((parcela) => {
           let sourceName = `parcela_${ parcela.id }`;
           

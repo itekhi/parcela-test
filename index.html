@@ -36,7 +36,7 @@
     const map = new mapboxgl.Map({
       container: 'map', // container ID
       style: 'mapbox://styles/mapbox/satellite-streets-v11', // style URL
-      center: [19.274311796569904, 42.49775544006773], // starting position
+      center: [19.271311796569904, 42.4925544006773], // starting position
       zoom: 15 // starting zoom
     });
 
@@ -61,26 +61,6 @@
             }
           });
 
-          // [
-          //   [19.273702931509398, 42.49793723431652],
-          //   [19.273871796302778, 42.49806292636827],
-          //   [19.274311796569904, 42.49775544006773],
-          //   [19.274170442763594, 42.49764249662826],
-          //   [19.273516297451707, 42.497104650152956],
-          //   [19.273440085501765, 42.49716788839486],
-          //   [19.27333814209483, 42.497282009291226],
-          //   [19.27320802763344, 42.4972011700726],
-          //   [19.273125275714392, 42.4972359415897],
-          //   [19.272964377372983, 42.49737052435809],
-          //   [19.272937934892532, 42.49744032102031],
-          //   [19.273456669691026, 42.49775658507238],
-          //   [19.27347504552696, 42.49769696132325],
-          //   [19.27349834501277, 42.497712007045116],
-          //   [19.273727226851168, 42.49782766846295],
-          //   [19.27375163028827, 42.49784315199315],
-          //   [19.273702931509398, 42.49793723431652]
-          // ]
-
           // Add a new layer to visualize the polygon.
           map.addLayer({
             'id': `parcela_layer_${ parcela.id }`,
@@ -93,7 +73,7 @@
             }
           });
 
-          // Add a black outline around the polygon.
+          // Add a red outline around the polygon.
           map.addLayer({
             'id': `parcela_outline_${parcela.id}`,
             'type': 'line',
@@ -102,6 +82,21 @@
             'paint': {
               'line-color': '#ff0000',
               'line-width': 2
+            }
+          });
+
+          map.addLayer({
+            'id': `parcela_areaText_${parcela.id}`,
+            'type': 'symbol',
+            'source': sourceName,
+            'layout': {
+              'text-field': `${parcela.area} m2`,
+              'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+              'text-radial-offset': 0.5,
+              'text-justify': 'auto',
+            },
+            'paint': {
+              'text-color': "#fff",
             }
           });
         });

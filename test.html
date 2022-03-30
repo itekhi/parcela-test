@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Add a polygon to a map using a GeoJSON source</title>
+  <meta name="viewport"
+    content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css"
+    rel="stylesheet">
+  <script
+    src="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaXRla2hpIiwiYSI6ImNsMHhhamJ0bzFpZDAzZG41cTRjOXhqcjcifQ.FyTuG3ch_D2053GBZHg4Rg';
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/light-v10',
+      center: [19.273703, 42.4979372],
+      zoom: 5
+    });
+
+    map.on('load', () => {
+      fetch('data.json').then(data => {
+
+        // transformedCoords = data.
+        
+        map.addSource('podgorica', {
+          'type': 'geojson',
+          'data': {
+            'type': 'Feature',
+            'geometry': {
+              'type': 'Polygon',
+              // These coordinates outline Maine.
+              'coordinates': [
+                [
+                  [2145431.2264524647, 5235435.66054194],
+                  [2145460.8628977854, 5235443.2465340663],
+                  [2145461.2535817027, 5235434.0658957809],
+                  [2145459.0108538154, 5235428.0919720968],
+                  [2145457.1398984268, 5235339.322766236],
+                  [2145441.960867791, 5235343.9827318918],
+                  [2145440.5588541073, 5235356.1687969137],
+                  [2145431.2264524647, 5235435.66054194]
+                ]
+              ]
+            }
+          }
+        });
+
+        // Add a new layer to visualize the polygon.
+        map.addLayer({
+          'id': 'podgorica',
+          'type': 'fill',
+          'source': 'podgorica', // reference the data source
+          'layout': {},
+          'paint': {
+            'fill-color': '#0080ff', // blue color fill
+            'fill-opacity': 0.5
+          }
+        });
+        // Add a black outline around the polygon.
+        map.addLayer({
+          'id': 'outline',
+          'type': 'line',
+          'source': 'podgorica',
+          'layout': {},
+          'paint': {
+            'line-color': '#000',
+            'line-width': 3
+          }
+        });
+      })
+    });
+  </script>
+
+</body>
+
+</html>

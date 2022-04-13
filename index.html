@@ -10,6 +10,7 @@
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js"></script>
   <script src="dist/proj4.js"></script>
+  <script src='https://unpkg.com/@turf/turf@6/turf.min.js'></script>
 
   <style>
     body {
@@ -32,76 +33,142 @@
   <div id="map"></div>
 
   <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoiaXRla2hpIiwiYSI6ImNsMHhhamJ0bzFpZDAzZG41cTRjOXhqcjcifQ.FyTuG3ch_D2053GBZHg4Rg';
-    const map = new mapboxgl.Map({
-      container: 'map', // container ID
-      style: 'mapbox://styles/mapbox/satellite-streets-v11', // style URL
-      center: [19.271311796569904, 42.4925544006773], // starting position
-      zoom: 15 // starting zoom
-    });
+    try {
 
-    map.on('load', () => {
-      fetch('data.json').then(response => response.json().then(data => {
-        data.forEach((parcela) => {
-          let sourceName = `parcela_${ parcela.id }`;
-          
-          let transformedCoords = parcela.coordinates.map(coords => {
-            return proj4("EPSG:3857", "EPSG:4326", [coords[0], coords[1]])
-          })
+      const ko = new URLSearchParams(location.search).get('ko');
+      if (!ko) throw new Error('KO not specified');
 
-          map.addSource(sourceName, {
-            'type': 'geojson',
-            'data': {
-              'type': 'Feature',
-              'geometry': {
-                'type': 'Polygon',
-                // These coordinates outline Maine.
-                'coordinates': [transformedCoords]
-              }
-            }
-          });
+      const ko_info = {
+        'djurkovici': {
+          'center': [19.271311796569904, 42.4925544006773],
+          'zoom': 15,
+        },
+        'maine': {
+          'center': [18.85515896753994, 42.301620289825794],
+          'zoom': 14,
+        }
+      }
 
-          // Add a new layer to visualize the polygon.
-          map.addLayer({
-            'id': `parcela_layer_${ parcela.id }`,
-            'type': 'fill',
-            'source': sourceName, // reference the data source
-            'layout': {},
-            'paint': {
-              'fill-color': '#fff', // blue color fill
-              'fill-opacity': 0.3
-            }
-          });
+      mapboxgl.accessToken = 'pk.eyJ1IjoiaXRla2hpIiwiYSI6ImNsMHhhamJ0bzFpZDAzZG41cTRjOXhqcjcifQ.FyTuG3ch_D2053GBZHg4Rg';
+      const map = new mapboxgl.Map({
+        container: 'map', // container ID
+        style: 'mapbox://styles/mapbox/satellite-streets-v11', // style URL
+        center: ko_info[ko].center, // starting position
+        zoom: ko_info[ko].zoom // starting zoom
+      });
 
-          // Add a red outline around the polygon.
-          map.addLayer({
-            'id': `parcela_outline_${parcela.id}`,
-            'type': 'line',
-            'source': sourceName,
-            'layout': {},
-            'paint': {
-              'line-color': '#ff0000',
-              'line-width': 2
-            }
-          });
+      map.on('load', async () => {
+        const sourceName = ko;
 
-          map.addLayer({
-            'id': `parcela_areaText_${parcela.id}`,
-            'type': 'symbol',
-            'source': sourceName,
-            'layout': {
-              'text-field': `${parcela.area} m2`,
-              'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-              'text-radial-offset': 0.5,
-              'text-justify': 'auto',
-            },
-            'paint': {
-              'text-color': "#fff",
-            }
-          });
+        const data = await fetch(`./data/${ko}.geoJSON`).then(res => res.json().then(data => data))
+
+        map.addSource(sourceName, {
+          'type': 'geojson',
+          'data': data
         });
-      }))
-    });
+
+        // Add a new layer to visualize the polygon.
+        map.addLayer({
+          'id': `layer_${sourceName}`,
+          'type': 'fill',
+          'source': sourceName, // reference the data source
+          'layout': {},
+          'paint': {
+            'fill-color': '#fff', // blue color fill
+            'fill-opacity': 0.3
+          }
+        });
+
+        // Add a red outline around the polygon.
+        map.addLayer({
+          'id': `outline_${sourceName}`,
+          'type': 'line',
+          'source': sourceName,
+          'layout': {},
+          'paint': {
+            'line-color': '#ff0000',
+            'line-width': 2
+          }
+        });
+
+        // map.addLayer({
+        //   'id': `areaText_${sourceName}`,
+        //   'type': 'symbol',
+        //   'source': sourceName,
+        //   'layout': {
+        //     'text-field': ['get', 'area'],
+        //     'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+        //     'text-radial-offset': 0.5,
+        //     'text-justify': 'auto',
+        //     'text-size': 10
+        //   },
+        //   'paint': {
+        //     'text-color': "#fff",
+        //   }
+        // })
+
+        let labelsData = {
+          "type": "FeatureCollection",
+          "features": []
+        }
+        let labelsSourceName = `${sourceName}_labels`;
+        data.features.forEach(feature => {
+          let centroidPt = turf.centroid(feature);
+          centroidPt.properties.area = `${feature.properties.area} m2`;
+
+          labelsData.features.push(centroidPt)
+        })
+
+        map.addSource(labelsSourceName, {
+          'type': 'geojson',
+          'data': labelsData
+        });
+
+        map.addLayer({
+          'id': 'label-style',
+          'type': 'symbol',
+          'source': labelsSourceName,
+          'layout': {
+            'text-field': ['get', 'area'],
+            'text-size': 10,
+            'text-radial-offset': 2,
+            'text-justify': 'auto',
+          },
+          'paint': {
+            'text-color': 'white'
+          }
+        });
+      });
+
+    } catch (err) {
+
+      alert(err);
+
+    }
+
+    function convertToGeoJSON(data) {
+      var geojson = {
+        "type": "FeatureCollection",
+        "features": []
+      }
+
+      data.forEach(parcela => {
+        geojson.features.push({
+          "type": "Feature",
+          "properties": {
+            "id": parcela.id,
+            "subid": parcela.subid,
+            "area": parcela.area
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [parcela.coordinates.map(coords => proj4("EPSG:3857", "EPSG:4326", [coords[0], coords[1]]))]
+          }
+        })
+      })
+
+      return JSON.stringify(geojson)
+    }
   </script>
 
 </body>

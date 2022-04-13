@@ -114,7 +114,7 @@
         let labelsSourceName = `${sourceName}_labels`;
         data.features.forEach(feature => {
           let centroidPt = turf.centroid(feature);
-          centroidPt.properties.area = `${feature.properties.area} m2`;
+          centroidPt.properties.area = `${Number(feature.properties.area).toFixed(0)} m2`;
 
           labelsData.features.push(centroidPt)
         })
